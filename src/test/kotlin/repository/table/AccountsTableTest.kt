@@ -1,9 +1,8 @@
 package com.dn0ne.repository.table
 
 import com.dn0ne.model.account.Account
-import com.dn0ne.model.user.User
 import com.dn0ne.repository.database
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -13,28 +12,23 @@ import java.util.*
 
 class AccountsTableTest {
 
-    private val user = User(
-        id = UUID.randomUUID(),
-        username = "test",
-        password = "test",
-        state = User.State.VerificationRequired
-    )
+    private val holderId = UUID.randomUUID()
 
     private val account1 = Account(
         id = UUID.randomUUID(),
-        holderId = user.id,
+        holderId = holderId,
         isActive = true
     )
 
     private val account2 = Account(
         id = UUID.randomUUID(),
-        holderId = user.id,
+        holderId = holderId,
         isActive = true
     )
 
     private val nonExistentAccount = Account(
         id = UUID.randomUUID(),
-        holderId = user.id,
+        holderId = holderId,
         isActive = false
     )
 
@@ -51,10 +45,6 @@ class AccountsTableTest {
     @Test
     fun `open account`() {
         transaction(database) {
-            UsersTable.insert(user)
-        }
-
-        transaction(database) {
             expectThat(AccountsTable.insert(account1)).isTrue()
             expectThat(AccountsTable.insert(account2)).isTrue()
 
@@ -65,11 +55,7 @@ class AccountsTableTest {
     @Test
     fun `find user accounts`() {
         transaction(database) {
-            UsersTable.insert(user)
-        }
-
-        transaction(database) {
-            expectThat(AccountsTable.selectByHolderId(user.id)).isEmpty()
+            expectThat(AccountsTable.selectByHolderId(holderId)).isEmpty()
         }
 
         transaction(database) {
@@ -78,17 +64,13 @@ class AccountsTableTest {
         }
 
         transaction(database) {
-            expectThat(AccountsTable.selectByHolderId(user.id))
+            expectThat(AccountsTable.selectByHolderId(holderId))
                 .isEqualTo(listOf(account1, account2))
         }
     }
 
     @Test
     fun `find account by id`() {
-        transaction(database) {
-            UsersTable.insert(user)
-        }
-
         transaction(database) {
             AccountsTable.insert(account1)
             AccountsTable.insert(account2)
@@ -102,10 +84,6 @@ class AccountsTableTest {
 
     @Test
     fun `update account`() {
-        transaction(database) {
-            UsersTable.insert(user)
-        }
-
         transaction(database) {
             AccountsTable.insert(account1)
         }

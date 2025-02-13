@@ -1,0 +1,11 @@
+ktor:
+  application:
+    modules:
+      - com.dn0ne.ApplicationKt.module
+  deployment:
+    port: 8080
+jwt:
+  audience: "jwt-audience"
+  issuer: "http://localhost"
+  realm: "my-realm"
+  secret: $SECRET

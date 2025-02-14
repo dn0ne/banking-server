@@ -10,6 +10,9 @@ class AccountService(
     private val accountRepository: AccountRepository
 ) {
 
+    suspend fun findById(id: String): Account? =
+        accountRepository.findById(UUID.fromString(id))
+
     suspend fun findByHolderId(holderId: String): List<Account> =
         accountRepository.findByHolderId(UUID.fromString(holderId))
 

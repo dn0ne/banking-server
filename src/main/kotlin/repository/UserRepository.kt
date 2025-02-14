@@ -7,9 +7,6 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import java.util.*
 
 class UserRepository {
-    suspend fun findAll(): List<User> = dbQuery {
-        UsersTable.all()
-    }
 
     suspend fun findById(id: UUID): User? = dbQuery {
         UsersTable.selectById(id)

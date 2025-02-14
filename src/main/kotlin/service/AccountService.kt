@@ -2,12 +2,14 @@ package com.dn0ne.service
 
 import com.dn0ne.model.account.Account
 import com.dn0ne.repository.AccountRepository
+import com.dn0ne.repository.TransactionRepository
 import com.dn0ne.repository.UserRepository
 import java.util.*
 
 class AccountService(
     private val userRepository: UserRepository,
-    private val accountRepository: AccountRepository
+    private val accountRepository: AccountRepository,
+    private val transactionRepository: TransactionRepository
 ) {
 
     suspend fun findById(id: String): Account? =
@@ -38,10 +40,28 @@ class AccountService(
                     isActive = false
                 )
             )
-            account
             foundAccount
         }
     }
+
+    suspend fun getBalance(account: Account): Double? {
+        val foundAccount = accountRepository
+            .findById(account.id)
+            ?.takeIf { it.isActive }
+
+        return foundAccount?.let { acc ->
+            val transactions = transactionRepository.findByAccountId(acc.id)
+
+            transactions.fold(0.0) { sum, transaction ->
+                sum + when {
+                    transaction.fromAccountId == acc.id -> sum - transaction.amount
+                    transaction.toAccountId == acc.id -> sum + transaction.amount
+                    else -> throw IllegalStateException(
+                        "Transaction with id ${transaction.id} " +
+                                "does not belong to the account with id ${acc.id}."
+                    )
+                }
+            }
         }
     }
 }

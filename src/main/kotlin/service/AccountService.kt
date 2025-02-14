@@ -29,16 +29,19 @@ class AccountService(
         }
     }
 
-    suspend fun closeAccount(account: Account): Account? {
-        val foundAccount = accountRepository.findById(account.id)
+    suspend fun closeAccount(id: String): Account? {
+        val foundAccount = accountRepository.findById(UUID.fromString(id))
 
         return foundAccount?.let {
             accountRepository.update(
-                account.copy(
+                foundAccount.copy(
                     isActive = false
                 )
             )
             account
+            foundAccount
+        }
+    }
         }
     }
 }

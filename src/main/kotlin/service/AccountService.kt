@@ -18,6 +18,13 @@ class AccountService(
     suspend fun findByHolderId(holderId: String): List<Account> =
         accountRepository.findByHolderId(UUID.fromString(holderId))
 
+    suspend fun checkHolder(accountId: String, holderUsername: String): Boolean {
+        val account = findById(accountId) ?: return false
+        val holder = userRepository.findByUsername(holderUsername) ?: return false
+
+        return account.holderId == holder.id
+    }
+
     suspend fun openAccount(account: Account): Account? {
         val foundUser = userRepository.findById(account.holderId)
 

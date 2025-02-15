@@ -4,13 +4,12 @@ import com.dn0ne.model.Transaction
 import com.dn0ne.model.isDeposit
 import com.dn0ne.model.isTransfer
 import com.dn0ne.model.isWithdraw
-import com.dn0ne.repository.AccountRepository
 import com.dn0ne.repository.TransactionRepository
-import java.util.UUID
+import java.util.*
 
 class TransactionService(
     private val transactionRepository: TransactionRepository,
-    private val accountRepository: AccountRepository,
+    private val accountService: AccountService,
 ) {
 
     suspend fun findByAccountId(accountId: String): List<Transaction> =
@@ -20,14 +19,19 @@ class TransactionService(
         if (transaction.amount <= 0) return false
 
         val senderAccount = transaction.fromAccountId?.let {
-            accountRepository.findById(it)
+            accountService.findById(it.toString())
         }
 
         if (senderAccount == null && !transaction.isDeposit() || transaction.isTransfer())
             return false
 
+        senderAccount?.let {
+            val balance = accountService.getBalance(it) ?: return false
+            if (balance < transaction.amount) return false
+        }
+
         val recipientAccount = transaction.toAccountId?.let {
-            accountRepository.findById(it)
+            accountService.findById(it.toString())
         }
 
         if (recipientAccount == null && !transaction.isWithdraw() || transaction.isTransfer())

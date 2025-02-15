@@ -29,6 +29,10 @@ fun Application.module() {
         accountRepository,
         transactionRepository
     )
+    val transactionService = TransactionService(
+        transactionRepository,
+        accountService
+    )
 
     configureSerialization()
     configureSecurity(jwtService)
@@ -37,6 +41,7 @@ fun Application.module() {
         userService,
         jwtService,
         verificationService,
-        accountService
+        accountService,
+        transactionService
     )
 }

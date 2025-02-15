@@ -1,9 +1,6 @@
 package com.dn0ne.routing
 
-import com.dn0ne.service.AccountService
-import com.dn0ne.service.JwtService
-import com.dn0ne.service.UserService
-import com.dn0ne.service.VerificationService
+import com.dn0ne.service.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.routing.*
@@ -13,6 +10,7 @@ fun Application.configureRouting(
     jwtService: JwtService,
     verificationService: VerificationService,
     accountService: AccountService,
+    transactionService: TransactionService
 ) {
     routing {
         route("/api/register") {
@@ -30,6 +28,13 @@ fun Application.configureRouting(
         authenticate {
             route("/api/account") {
                 accountRoute(accountService, userService)
+            }
+
+            route("/api/transaction") {
+                transactionRoute(
+                    transactionService,
+                    accountService
+                )
             }
         }
     }

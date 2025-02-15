@@ -57,16 +57,11 @@ fun Route.accountRoute(
         val accountId = call.parameters["id"]
             ?: return@post call.respond(HttpStatusCode.BadRequest)
 
-        val account = accountService.findById(accountId)
-            ?: return@post call.respond(HttpStatusCode.NotFound)
-
         val username = extractPrincipalUsername(call)
             ?: return@post call.respond(HttpStatusCode.Forbidden)
 
-        val user = userService.findByUsername(username)
-            ?: return@post call.respond(HttpStatusCode.Forbidden)
-
-        if (account.holderId != user.id) {
+        val isAccountHolder = accountService.checkHolder(accountId, username)
+        if (!isAccountHolder) {
             return@post call.respond(HttpStatusCode.Forbidden)
         }
 

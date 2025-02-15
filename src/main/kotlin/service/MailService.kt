@@ -15,7 +15,7 @@ class MailService {
         .buildMailer()
 
     fun sendVerificationEmail(token: String, user: User) {
-        val verificationLink = "http://localhost:8080/verify?token=$token"
+        val verificationLink = "http://localhost:8080/verify/$token"
         val email = EmailBuilder.startingBlank()
             .from("dev.dn0ne@gmail.com")
             .to(user.username)

@@ -3,8 +3,11 @@ package com.dn0ne.service
 import com.dn0ne.model.user.User
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
+import org.slf4j.LoggerFactory
 
 class MailService {
+    private val logger = LoggerFactory.getLogger(MailService::class.java)
+
     private val mailer = MailerBuilder
         .withSMTPServer(
             "smtp.gmail.com",
@@ -15,6 +18,8 @@ class MailService {
         .buildMailer()
 
     fun sendVerificationEmail(token: String, user: User) {
+        logger.info("Sending verification for ${user.username}")
+
         val verificationLink = "http://localhost:8080/verify/$token"
         val email = EmailBuilder.startingBlank()
             .from("dev.dn0ne@gmail.com")
@@ -25,7 +30,7 @@ class MailService {
 
         mailer.sendMail(email).whenComplete { _, throwable ->
             throwable?.let {
-                println("ERROR: Failed to send verification email: ${it.message}")
+                logger.error("Failed to send verification email to ${user.username}", throwable.message)
             }
         }
     }

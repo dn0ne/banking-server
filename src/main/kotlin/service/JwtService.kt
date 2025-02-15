@@ -8,12 +8,15 @@ import com.dn0ne.routing.request.LoginRequest
 import com.dn0ne.util.verify
 import io.ktor.server.application.*
 import io.ktor.server.auth.jwt.*
+import org.slf4j.LoggerFactory
 import java.util.Date
 
 class JwtService(
     private val application: Application,
     private val userService: UserService
 ) {
+    private val logger = LoggerFactory.getLogger(JwtService::class.java)
+
     private val secret = getConfigProperty("jwt.secret")
     private val issuer = getConfigProperty("jwt.issuer")
     private val audience = getConfigProperty("jwt.audience")
@@ -26,17 +29,23 @@ class JwtService(
             .build()
 
     suspend fun createToken(loginRequest: LoginRequest): String? {
+        logger.info("Authenticating ${loginRequest.username}")
+
         val foundUser = userService.findByUsername(loginRequest.username)
             ?.takeIf { it.isActive() }
 
         return if (foundUser != null && loginRequest.password.verify(foundUser.password)) {
+            logger.info("Authenticated user ${foundUser.username}")
             JWT.create()
                 .withAudience(audience)
                 .withIssuer(issuer)
                 .withClaim("username", foundUser.username)
                 .withExpiresAt(Date(System.currentTimeMillis() + 3_600_000))
                 .sign(Algorithm.HMAC256(secret))
-        } else null
+        } else {
+            logger.info("Authentication denied for ${loginRequest.username}")
+            null
+        }
     }
 
     suspend fun customValidator(credential: JWTCredential): JWTPrincipal? {

@@ -2,6 +2,7 @@ package com.dn0ne.routing
 
 import com.dn0ne.model.account.Account
 import com.dn0ne.routing.response.AccountResponse
+import com.dn0ne.service.AccountResult
 import com.dn0ne.service.AccountService
 import com.dn0ne.service.UserService
 import io.ktor.http.*
@@ -29,9 +30,16 @@ fun Route.accountRoute(
             isActive = true,
         )
 
-        accountService.openAccount(account)?.let {
-            return@post call.respond(HttpStatusCode.Created)
-        } ?: return@post call.respond(HttpStatusCode.InternalServerError)
+        return@post when (val result = accountService.openAccount(account)) {
+            AccountResult.Success -> call.respond(HttpStatusCode.Created)
+            AccountResult.HolderNotFound -> call.respond(HttpStatusCode.Forbidden)
+            else -> call.respond(
+                HttpStatusCode.Conflict,
+                mapOf(
+                    "error" to result
+                )
+            )
+        }
     }
 
     get {
@@ -65,9 +73,38 @@ fun Route.accountRoute(
             return@post call.respond(HttpStatusCode.Forbidden)
         }
 
-        accountService.closeAccount(accountId)?.let {
-            return@post call.respond(HttpStatusCode.OK)
-        } ?: return@post call.respond(HttpStatusCode.InternalServerError)
+        return@post when (val result = accountService.closeAccount(accountId)) {
+            AccountResult.Success -> call.respond(HttpStatusCode.OK)
+            else -> call.respond(
+                HttpStatusCode.Conflict,
+                mapOf(
+                    "error" to result
+                )
+            )
+        }
+    }
+
+    post("/reopen/{id}") {
+        val accountId = call.parameters["id"]
+            ?: return@post call.respond(HttpStatusCode.BadRequest)
+
+        val username = extractPrincipalUsername(call)
+            ?: return@post call.respond(HttpStatusCode.Forbidden)
+
+        val isAccountHolder = accountService.checkHolder(accountId, username)
+        if (!isAccountHolder) {
+            return@post call.respond(HttpStatusCode.Forbidden)
+        }
+
+        return@post when (val result = accountService.reopenAccount(accountId)) {
+            AccountResult.Success -> call.respond(HttpStatusCode.OK)
+            else -> call.respond(
+                HttpStatusCode.Conflict,
+                mapOf(
+                    "error" to result
+                )
+            )
+        }
     }
 }
 

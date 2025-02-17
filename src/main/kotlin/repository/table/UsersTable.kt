@@ -12,7 +12,7 @@ object UsersTable : IdTable<UUID>() {
     override val id = uuid("id").entityId().uniqueIndex()
     val username = varchar("username", 128).uniqueIndex()
     val password = varchar("password", 128)
-    val state = enumeration("state", User.State::class)
+    val state = enumerationByName("state", 20, User.State::class)
 }
 
 fun UsersTable.insert(user: User): Boolean {

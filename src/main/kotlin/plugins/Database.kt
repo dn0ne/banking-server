@@ -1,5 +1,7 @@
 package com.dn0ne.plugins
 
+import com.dn0ne.repository.table.AccountsTable
+import com.dn0ne.repository.table.TransactionsTable
 import com.dn0ne.repository.table.UsersTable
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.server.application.*
@@ -32,7 +34,7 @@ fun Application.configureDatabase() {
     val database = Database.connect(dataSource)
 
     transaction(database) {
-        SchemaUtils.drop(UsersTable)
-        SchemaUtils.create(UsersTable)
+        SchemaUtils.drop(UsersTable, AccountsTable, TransactionsTable)
+        SchemaUtils.create(UsersTable, AccountsTable, TransactionsTable)
     }
 }

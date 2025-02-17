@@ -1,8 +1,11 @@
 package com.dn0ne.routing.request
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class TransactionRequest(
-    val fromAccountId: String?,
-    val toAccountId: String?,
+    val fromAccountId: String? = null,
+    val toAccountId: String? = null,
     val amount: Double
 )
 

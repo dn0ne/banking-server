@@ -43,7 +43,7 @@ class AccountsTableTest {
     }
 
     @Test
-    fun `open account`() {
+    fun `add account`() {
         transaction(database) {
             expectThat(AccountsTable.insert(account1)).isTrue()
             expectThat(AccountsTable.insert(account2)).isTrue()

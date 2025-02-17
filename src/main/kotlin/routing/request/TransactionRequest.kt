@@ -10,4 +10,6 @@ data class TransactionRequest(
 )
 
 fun TransactionRequest.verify(): Boolean =
-    fromAccountId != null || toAccountId != null && amount > 0
+    (fromAccountId != null || toAccountId != null)
+            && fromAccountId != toAccountId
+            && amount > 0

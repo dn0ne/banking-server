@@ -6,6 +6,7 @@ import com.dn0ne.routing.request.TransactionRequest
 import com.dn0ne.routing.request.verify
 import com.dn0ne.routing.response.TransactionResponse
 import com.dn0ne.service.AccountService
+import com.dn0ne.service.TransactionResult
 import com.dn0ne.service.TransactionService
 import io.ktor.http.*
 import io.ktor.server.request.*
@@ -39,21 +40,42 @@ fun Route.transactionRoute(
     post {
         val transactionRequest = try {
             call.receive<TransactionRequest>().takeIf { it.verify() }
-                ?: return@post call.respond(HttpStatusCode.BadRequest)
+                ?: run {
+                    call.application.environment.log.info("TransactionRequest is not valid")
+                    return@post call.respond(HttpStatusCode.BadRequest)
+                }
         } catch (e: ContentTransformationException) {
+            call.application.environment.log.info("Failed to parse transaction request")
             return@post call.respond(HttpStatusCode.BadRequest)
+        }
+
+        val username = extractPrincipalUsername(call)
+            ?: return@post call.respond(HttpStatusCode.Forbidden)
+
+        transactionRequest.fromAccountId?.let {
+            val isSenderAccountHolder = accountService.checkHolder(it, username)
+            if (!isSenderAccountHolder) {
+                return@post call.respond(HttpStatusCode.Forbidden)
+            }
         }
 
         val transaction = try {
             transactionRequest.toModel()
         } catch (e: IllegalArgumentException) {
+            call.application.environment.log.info("Failed to convert transaction request: $transactionRequest")
             return@post call.respond(HttpStatusCode.BadRequest)
         }
 
-        val isAccepted = transactionService.processTransaction(transaction)
-        if (isAccepted) {
-            return@post call.respond(HttpStatusCode.OK)
-        } else return@post call.respond(HttpStatusCode.BadRequest)
+        when (val result = transactionService.processTransaction(transaction)) {
+            TransactionResult.Accepted -> return@post call.respond(HttpStatusCode.OK)
+            TransactionResult.BadTransaction -> return@post call.respond(HttpStatusCode.BadRequest)
+            else -> return@post call.respond(
+                HttpStatusCode.Conflict,
+                mapOf(
+                    "error" to result
+                )
+            )
+        }
     }
 }
 
@@ -69,8 +91,8 @@ private fun Transaction.toResponse(): TransactionResponse =
 private fun TransactionRequest.toModel(): Transaction =
     Transaction(
         id = UUID.randomUUID(),
-        fromAccountId = UUID.fromString(fromAccountId),
-        toAccountId = UUID.fromString(toAccountId),
+        fromAccountId = fromAccountId?.let { UUID.fromString(it) },
+        toAccountId = toAccountId?.let { UUID.fromString(it) },
         amount = amount,
         type = when {
             fromAccountId != null && toAccountId != null -> Transaction.Type.Transfer

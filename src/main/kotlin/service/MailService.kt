@@ -17,15 +17,14 @@ class MailService {
         )
         .buildMailer()
 
-    fun sendVerificationEmail(token: String, user: User) {
+    fun sendVerificationEmail(code: String, user: User) {
         logger.info("Sending verification for ${user.username}")
 
-        val verificationLink = "http://localhost:8080/verify/$token"
         val email = EmailBuilder.startingBlank()
             .from("dev.dn0ne@gmail.com")
             .to(user.username)
             .withSubject("Email verification")
-            .withPlainText("Click the link to verify your account: $verificationLink")
+            .withPlainText("Your verification code is $code")
             .buildEmail()
 
         mailer.sendMail(email).whenComplete { _, throwable ->

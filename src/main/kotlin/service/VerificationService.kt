@@ -2,7 +2,7 @@ package com.dn0ne.service
 
 import com.dn0ne.model.user.User
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import kotlin.random.Random
 
 class VerificationService(
     private val mailService: MailService
@@ -13,23 +13,35 @@ class VerificationService(
 
     fun sendVerificationEmail(user: User) {
         logger.info("Forming verification data for ${user.username}")
-        val token = UUID.randomUUID().toString()
+        val code = generateCode().takeIf { it > 0 }?.toString() ?: run {
+            logger.warn("Failed to add verification for ${user.username}: pool is full")
+            return
+        }
 
-        val existingVerificationToken = pendingVerifications.entries
+        val existingVerificationCode = pendingVerifications.entries
             .find { it.value == user }?.key
 
-        existingVerificationToken?.let {
-            logger.info("Verification token already exists for ${user.username}, assigning new one")
+        existingVerificationCode?.let {
+            logger.info("Verification code already exists for ${user.username}, assigning new one")
             pendingVerifications.remove(it)
         }
 
-        pendingVerifications[token] = user
-        logger.info("Verification token for ${user.username}: $token")
+        pendingVerifications[code] = user
+        logger.info("Verification code for ${user.username}: $code")
 
-        mailService.sendVerificationEmail(token, user)
+        mailService.sendVerificationEmail(code, user)
     }
 
     fun verifyEmail(token: String): User? {
         return pendingVerifications.remove(token)
+    }
+
+    private fun generateCode(): Int {
+        var newCode: Int
+        do {
+            newCode = Random.nextInt(100_000, 1_000_000)
+        } while (newCode.toString() !in pendingVerifications.keys)
+
+        return newCode
     }
 }

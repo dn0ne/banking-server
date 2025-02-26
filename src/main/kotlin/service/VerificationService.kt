@@ -1,6 +1,7 @@
 package com.dn0ne.service
 
 import com.dn0ne.model.user.User
+import com.dn0ne.routing.request.VerificationRequest
 import org.slf4j.LoggerFactory
 import kotlin.random.Random
 
@@ -9,39 +10,27 @@ class VerificationService(
 ) {
     private val logger = LoggerFactory.getLogger(VerificationService::class.java)
 
-    private val pendingVerifications = mutableMapOf<String, User>()
+    private val pendingVerifications = mutableMapOf<User, String>()
 
     fun sendVerificationEmail(user: User) {
         logger.info("Forming verification data for ${user.username}")
-        val code = generateCode().takeIf { it > 0 }?.toString() ?: run {
-            logger.warn("Failed to add verification for ${user.username}: pool is full")
-            return
-        }
+        val code = Random.nextInt(0, 1_000_000).toString().padStart(6, '0')
 
-        val existingVerificationCode = pendingVerifications.entries
-            .find { it.value == user }?.key
-
-        existingVerificationCode?.let {
-            logger.info("Verification code already exists for ${user.username}, assigning new one")
-            pendingVerifications.remove(it)
-        }
-
-        pendingVerifications[code] = user
+        pendingVerifications[user] = code
         logger.info("Verification code for ${user.username}: $code")
 
         mailService.sendVerificationEmail(code, user)
     }
 
-    fun verifyEmail(token: String): User? {
-        return pendingVerifications.remove(token)
-    }
+    fun verifyEmail(request: VerificationRequest): User? {
+        val entry = pendingVerifications.entries.find {
+            request.username == it.key.username
+                    && request.code == it.value
+        }
 
-    private fun generateCode(): Int {
-        var newCode: Int
-        do {
-            newCode = Random.nextInt(100_000, 1_000_000)
-        } while (newCode.toString() !in pendingVerifications.keys)
+        if (entry == null) return null
 
-        return newCode
+        pendingVerifications.remove(entry.key)
+        return entry.key
     }
 }

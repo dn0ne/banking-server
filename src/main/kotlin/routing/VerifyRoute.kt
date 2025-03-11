@@ -1,6 +1,5 @@
 package com.dn0ne.routing
 
-import com.dn0ne.model.user.User
 import com.dn0ne.routing.request.VerificationRequest
 import com.dn0ne.service.UserService
 import com.dn0ne.service.VerificationService
